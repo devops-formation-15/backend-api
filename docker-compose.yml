@@ -1,29 +1,55 @@
+
 services:
-  # Backend API
-  backend-api:
-    image: talel12/api-session14
-    container_name: backend-api
-    build:  
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3001"
-
-
   mongo:
-    image: mongo
+    image: mongo:4.4
     restart: always
+    ports:
+      - 27017:27017
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - database:/etc/mongo
+    networks:
+      - backend
 
   mongo-express:
     image: mongo-express
     restart: always
     ports:
-      - 8081:8081
+      - 8089:8081
     environment:
-      ME_CONFIG_MONGODB_URL: mongodb://root:admin@mongo:27017/
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo:27017/
       ME_CONFIG_BASICAUTH_ENABLED: true
-      ME_CONFIG_BASICAUTH_USERNAME: mongoexpressuser
-      ME_CONFIG_BASICAUTH_PASSWORD: mongoexpresspass
+      ME_CONFIG_BASICAUTH_USERNAME: exproot
+      ME_CONFIG_BASICAUTH_PASSWORD: expadmin
+    networks :
+      - backend
+  backend:
+    build :
+      context : .
+      dockerfile : Dockerfile
+    image : express-backend:latest
+    ports:
+      - 3001:3001
+    env_file:
+      - .env 
+    environment:
+       MONGO_URI : mongodb://root:admin@mongo:27017/
+    depends_on:
+      - mongo
+    networks :
+      - backend
+volumes:
+  database :
+
+
+networks:
+  backend :
+
+
+
+
+
+
+

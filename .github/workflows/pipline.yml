@@ -1,0 +1,80 @@
+name: backendpipline
+
+on:
+    push:
+        branches:
+            - main
+    workflow_dispatch:
+jobs:
+    test:
+        runs-on: ubuntu-20.04
+        steps:
+            - name: copy code source
+              uses: actions/checkout@v6
+            - name: setup node
+              uses: actions/setup-node@v6
+
+            - name: install dependency
+              run: npm i
+            - name: excute test
+              run: npm run test
+
+    build:
+        needs: test
+        runs-on: ubuntu-latest
+        steps:
+            - name: copy code source
+              uses: actions/checkout@v6
+            - name: Login to Docker Hub
+              uses: docker/login-action@v3
+              with:
+                  username: ${{ vars.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
+            - name: build docker image
+              run: docker build -t nourzakhama2003/express-backend:latest .
+            - name: push image
+              run: docker push nourzakhama2003/express-backend:latest
+
+    deploy:
+        runs-on: ubuntu-latest
+        needs: build
+        steps:
+            - name: Execute remote SSH commands using password
+              uses: appleboy/ssh-action@v1
+              with:
+                  host: ${{ secrets.VPS_HOST }}
+                  username: ${{ secrets.VPS_USERNAME }}
+                  password: ${{ secrets.VPS_PASSWORD }}
+                  script: |
+                      cd /home/user/devops-scripts
+                      echo "pulling backend image..."
+                      docker compose pull 
+                      echo "running the new image..." 
+                      docker compose up -d  --force-recreate backend
+
+# build-and-push:
+#     needs: test                          # only build if tests pass
+#     runs-on: ubuntu-latest               # "ubuntu" label does not exist
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v3
+
+#       - name: Login to Docker Hub
+#         uses: docker/login-action@v3
+#         with:
+#           username: ${{ vars.DOCKERHUB_USERNAME }}
+#           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+#       - name: Build and push image
+#         uses: docker/build-push-action@v6
+#         with:
+#           context: .
+#           push: true
+#           tags: nourzakhama2003/express-backend:latest
+#           # optional: tag with commit SHA too
+#           # tags: |
+#           #   nourzakhama2003/express-backend:latest
+#           #   nourzakhama2003/express-backend:${{ github.sha }}

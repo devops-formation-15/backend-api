@@ -5,6 +5,11 @@ on:
         branches:
             - main
     workflow_dispatch:
+env:
+  VERSION_NUMBER: ${{github.run_number}}
+  SERVICE_NAME: ${{vars.SERVICE_NAME}}
+  IMAGE_NAME: ${{vars.IMAGE_NAME}}
+  DOCKER_COMPOSE_LOCATION: ${{vars.DOCKER_COMPOSE_LOCATION}}
 jobs:
     test:
         runs-on: ubuntu-latest
@@ -31,9 +36,11 @@ jobs:
                   username: ${{ vars.DOCKERHUB_USERNAME }}
                   password: ${{ secrets.DOCKERHUB_TOKEN }}
             - name: build docker image
-              run: docker build -t nourzakhama2003/express-backend:latest .
+              run: docker build -t ${{env.IMAGE_NAME}} .
+            - name: taracbilite de l ancien version
+              run : docker  tag ${{env.IMAGE_NAME}} ${{env.IMAGE_NAME}}:v${{env.VERSION_NUMBER}}
             - name: push image
-              run: docker push nourzakhama2003/express-backend:latest
+              run: docker push ${{env.IMAGE_NAME}}:latest
 
     deploy:
         runs-on: ubuntu-latest
@@ -46,11 +53,11 @@ jobs:
                   username: ${{ secrets.VPS_USERNAME }}
                   password: ${{ secrets.VPS_PASSWORD }}
                   script: |
-                      cd /home/user/devops-scripts
+                      cd ${{env.DOCKER_COMPOSE_LOCATION}}
                       echo "pulling backend image..."
-                      docker compose pull 
+                      docker compose pull ${{env.SERVICE_NAME}}
                       echo "running the new image..." 
-                      docker compose up -d  --force-recreate backend
+                      docker compose up -d  --force-recreate ${{env.SERVICE_NAME}}
 
 # build-and-push:
 #     needs: test                          # only build if tests pass

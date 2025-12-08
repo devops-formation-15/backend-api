@@ -49,14 +49,16 @@ jobs:
 
       - name: Install Dependency Scanning Tool (Snyk)
         run: npm install -g snyk
-
+      - name: build docker image
+        run: docker build -t ${{env.IMAGE_NAME}} .
       - name: Snyk Authentication
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
       - name: Run Snyk Vulnerability Scan
         run: |
-             snyk test --severity-threshold=high
              snyk monitor  --org=devops-formation-15
+             snyk container test ${{env.IMAGE_NAME}}  --severity-threshold=high
+             snyk test --severity-threshold=high
 
 
     build:

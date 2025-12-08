@@ -54,7 +54,9 @@ jobs:
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
       - name: Run Snyk Vulnerability Scan
-        run: snyk monitor  --org=devops-formation-15
+        run: |
+             snyk test --severity-threshold=high
+             snyk monitor  --org=devops-formation-15
 
 
     build:

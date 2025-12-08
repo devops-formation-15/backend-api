@@ -31,7 +31,7 @@ jobs:
         uses: actions/checkout@v4
       - name: install dependency
         run: npm i
-      - name: run Trivy to scan
+      - name: run Trivy to scan code base file systeme
         uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: 'fs'
@@ -53,17 +53,23 @@ jobs:
         run: docker build -t ${{env.IMAGE_NAME}} .
       - name: Snyk Authentication
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
-
-      - name: Run Snyk Vulnerability Scan
+      - name: Run Snyk Vulnerability Scan on dependencencies
+        run: |
+            snyk test
+            snyk monitor --org=devops-formation-15
+            snyk test --severity-threshold=high 
+      - name: Run Snyk Vulnerability Scan on  docker images
         run: |
             snyk container test ${{ env.IMAGE_NAME }} \
                --file=Dockerfile \
-               --severity-threshold=high \
-               --fail-on=upgradable \
                --org=devops-formation-15
             snyk container monitor ${{ env.IMAGE_NAME }} \
                 --file=Dockerfile \
                 --org=devops-formation-15 \
+             snyk container test ${{ env.IMAGE_NAME }} \
+               --file=Dockerfile \
+               --severity-threshold=high \
+               --org=devops-formation-15
 
 
     build:

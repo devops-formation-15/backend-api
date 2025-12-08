@@ -29,7 +29,8 @@ jobs:
       steps:      
       - name: Checkout Code
         uses: actions/checkout@v4
-  
+      - name: install dependency
+        run: npm i
       - name: run Trivy to scan
         uses: aquasecurity/trivy-action@0.28.0
         with:
@@ -53,7 +54,7 @@ jobs:
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
       - name: Run Snyk Vulnerability Scan
-        run: snyk monitor --all-projects --org=assidiwassim
+        run: snyk monitor  --org=devops-formation-15
 
 
     build:

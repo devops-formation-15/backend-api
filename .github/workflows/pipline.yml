@@ -11,7 +11,7 @@ env:
   IMAGE_NAME: ${{vars.IMAGE_NAME}}
   DOCKER_COMPOSE_LOCATION: ${{vars.DOCKER_COMPOSE_LOCATION}}
 jobs:
-    test:
+    unit-test:
         runs-on: ubuntu-latest
         steps:
             - name: copy code source
@@ -23,9 +23,41 @@ jobs:
               run: npm i
             - name: excute test
               run: npm run test
+    trivy-image-security-scan-job:
+      needs: unit-test
+      runs-on: ubuntu-latest
+      steps:      
+      - name: Checkout Code
+        uses: actions/checkout@v4
+  
+      - name: run Trivy to scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+    snyk-code-security-scan-job:
+      needs: unit-test
+      runs-on: ubuntu-latest
+      steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Dependency Scanning Tool (Snyk)
+        run: npm install -g snyk
+
+      - name: Snyk Authentication
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Run Snyk Vulnerability Scan
+        run: snyk monitor --all-projects --org=assidiwassim
+
 
     build:
-        needs: test
+        needs: [trivy-image-security-scan-job,snyk-code-security-scan-job]
         runs-on: ubuntu-latest
         steps:
             - name: copy code source

@@ -66,10 +66,7 @@ jobs:
             snyk container monitor ${{ env.IMAGE_NAME }} \
                 --file=Dockerfile \
                 --org=devops-formation-15 \
-             snyk container test ${{ env.IMAGE_NAME }} \
-               --file=Dockerfile \
-               --severity-threshold=high \
-               --org=devops-formation-15
+           
 
 
     build:

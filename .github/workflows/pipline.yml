@@ -56,9 +56,14 @@ jobs:
 
       - name: Run Snyk Vulnerability Scan
         run: |
-             snyk monitor  --org=devops-formation-15
-             snyk container test ${{env.IMAGE_NAME}}  --severity-threshold=high
-             snyk test --severity-threshold=high
+            snyk container test ${{ env.IMAGE_NAME }} \
+               --file=Dockerfile \
+               --severity-threshold=high \
+               --fail-on=upgradable \
+               --org=devops-formation-15
+            snyk container monitor ${{ env.IMAGE_NAME }} \
+                --file=Dockerfile \
+                --org=devops-formation-15 \
 
 
     build:

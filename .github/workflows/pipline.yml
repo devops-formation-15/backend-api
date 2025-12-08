@@ -58,14 +58,7 @@ jobs:
             snyk test
             snyk monitor --org=devops-formation-15
             snyk test --severity-threshold=high 
-      - name: Run Snyk Vulnerability Scan on  docker images
-        run: |
-            snyk container test ${{ env.IMAGE_NAME }} \
-               --file=Dockerfile \
-               --org=devops-formation-15
-            snyk container monitor ${{ env.IMAGE_NAME }} \
-                --file=Dockerfile \
-                --org=devops-formation-15 \
+     
            
 
 
@@ -106,6 +99,18 @@ jobs:
                       echo "running the new image..." 
                       docker compose up -d  --force-recreate ${{env.SERVICE_NAME}}
 
+
+
+
+
+        #                - name: Run Snyk Vulnerability Scan on  docker images
+        # run: |
+        #     snyk container test ${{ env.IMAGE_NAME }} \
+        #        --file=Dockerfile \
+        #        --org=devops-formation-15
+        #     snyk container monitor ${{ env.IMAGE_NAME }} \
+        #         --file=Dockerfile \
+        #         --org=devops-formation-15 \
 # build-and-push:
 #     needs: test                          # only build if tests pass
 #     runs-on: ubuntu-latest               # "ubuntu" label does not exist

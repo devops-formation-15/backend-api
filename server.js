@@ -52,7 +52,7 @@ app.get("/health", async (req, res) => {
     const latency = Date.now() - start;
     res.status(200).json({
       status: "UP",
-      message: "App is running smoothly hhh. - le bon developpeur test 🚀",
+      message: "App is running smoothly . - le bon developpeur test 🚀",
       database: "Connected",
       latency: `${latency}ms`,
       timestamp: new Date().toISOString()

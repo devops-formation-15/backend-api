@@ -36,25 +36,34 @@ pipeline {
             }
         }
 
-        stage('Deploy to VPS') {
-            steps {
-                withCredentials([
-                    string(credentialsId: 'VPS_HOST',     variable: 'VPS_HOST'),
-                    string(credentialsId: 'VPS_USERNAME', variable: 'VPS_USER'),
-                    string(credentialsId: 'VPS_PASSWORD', variable: 'VPS_PASS')
-                ]) {
-                    sh """
-                        sshpass -p "\${VPS_PASS}" ssh -o StrictHostKeyChecking=no "\${VPS_USER}@\${VPS_HOST}" "
-                            cd ${DOCKER_COMPOSE_LOCATION}
-                            echo 'Pulling new image...'
-                            docker compose pull ${SERVICE_NAME}
-                            echo 'Restarting container...'
-                            docker compose up -d --force-recreate ${SERVICE_NAME}
-                        "
-                    """
-                }
-            }
+stage('Deploy to VPS') {
+    steps {
+        withCredentials([
+            sshUserPrivateKey(
+                credentialsId: 'vps-ssh-key',
+                keyFileVariable: 'SSH_KEY',
+                usernameVariable: 'VPS_USER'
+            ),
+            string(credentialsId: 'VPS_HOST', variable: 'VPS_HOST')
+        ]) {
+            bat """
+                ssh -i "%SSH_KEY%" -o StrictHostKeyChecking=no "%VPS_USER%@%VPS_HOST%" ^
+                    "sudo su - -c ' \\
+                        set -e && \\
+                        cd ~/projects/shop || { echo \"ERROR: Directory ~/projects/shop not found\"; exit 1; } && \\
+                        echo \"Logged in as:\" && whoami && \\
+                        echo \"Current directory:\" && pwd && \\
+                        ls -la && \\
+                        echo \"Pulling new image...\" && \\
+                        docker compose pull ${SERVICE_NAME} || { echo \"Pull failed\"; exit 1; } && \\
+                        echo \"Restarting container...\" && \\
+                        docker compose up -d --force-recreate ${SERVICE_NAME} || { echo \"Up failed\"; exit 1; } && \\
+                        echo \"Deployment finished successfully.\" \\
+                    '"
+            """
         }
+    }
+}
     }
 
     post {
@@ -69,3 +78,29 @@ pipeline {
         }
     }
 }
+
+
+
+
+//        stage('Deploy to VPS') {
+//     steps {
+//         withCredentials([
+//             sshUserPrivateKey(
+//                 credentialsId: 'vps-ssh-key',   // ← your new credential ID
+//                 keyFileVariable: 'SSH_KEY',
+//                 usernameVariable: 'VPS_USER'
+//             ),
+//             string(credentialsId: 'VPS_HOST', variable: 'VPS_HOST')
+//         ]) {
+//             bat """
+//                 ssh -i "%SSH_KEY%" -o StrictHostKeyChecking=no "%VPS_USER%@%VPS_HOST%" ^
+//                     "cd ~/projects/shop && ^
+//                      echo 'Pulling new image...' && ^
+//                      docker compose pull ${SERVICE_NAME} && ^
+//                      echo 'Restarting container...' && ^
+//                      docker compose up -d --force-recreate ${SERVICE_NAME} && ^
+//                      echo 'Deploy done.'"
+//             """
+//         }
+//     }
+// }

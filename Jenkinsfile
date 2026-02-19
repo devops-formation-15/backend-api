@@ -35,26 +35,25 @@ pipeline {
                 }
             }
         }
-
 stage('Deploy to VPS') {
     steps {
         withCredentials([
-            sshUserPrivateKey(credentialsId: 'vps-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'VPS_USER'),
+            usernamePassword(
+                credentialsId: 'vps-vagrant-password',  // ← your new credential ID
+                usernameVariable: 'VPS_USER',
+                passwordVariable: 'VPS_PASS'
+            ),
             string(credentialsId: 'VPS_HOST', variable: 'VPS_HOST')
         ]) {
             bat """
-                ssh -i "%SSH_KEY%" -o StrictHostKeyChecking=no "%VPS_USER%@%VPS_HOST%" ^
-                    "set -e && \\
-                     cd ${DOCKER_COMPOSE_LOCATION} || { echo \"ERROR: Directory ${DOCKER_COMPOSE_LOCATION} not found\"; exit 1; } && \\
-                     echo \"Logged in as:\" && whoami && \\
-                     echo \"Current directory:\" && pwd && \\
+                sshpass -p "%VPS_PASS%" ssh -o StrictHostKeyChecking=no "%VPS_USER%@%VPS_HOST%" ^
+                    "cd ${DOCKER_COMPOSE_LOCATION} || { echo 'ERROR: Directory not found'; exit 1; } && \\
+                     echo 'Logged in as:' && whoami && \\
+                     pwd && \\
                      ls -la && \\
-                     echo \"Pulling new image...\" && \\
-                     docker compose pull ${SERVICE_NAME} || { echo \"Pull failed\"; exit 1; } && \\
-                     echo \"Restarting container...\" && \\
-                     docker compose up -d --force-recreate ${SERVICE_NAME} || { echo \"Up failed\"; exit 1; } && \\
-                     echo \"Deployment finished successfully.\" && \\
-                     docker ps --filter 'name=${SERVICE_NAME}'"
+                     docker compose pull ${SERVICE_NAME} || { echo 'Pull failed'; exit 1; } && \\
+                     docker compose up -d --force-recreate ${SERVICE_NAME} || { echo 'Up failed'; exit 1; } && \\
+                     echo 'Deployment finished successfully.'"
             """
         }
     }

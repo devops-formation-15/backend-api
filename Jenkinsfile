@@ -9,7 +9,7 @@ pipeline {
         VERSION_NUMBER          = "${BUILD_NUMBER}"
         SERVICE_NAME            = "backend"
         IMAGE_NAME              = "nourzakhama2003/express-backend"   // ← your Docker Hub repo
-        DOCKER_COMPOSE_LOCATION = "~/projects/shop"                   // path on your VPS
+        DOCKER_COMPOSE_LOCATION = "~/projects/shop/devops-scripts"                   // path on your VPS
         DOCKERHUB_CREDENTIALS   = "dockerhub-credentials"             // ← we'll create this
     }
 
@@ -39,27 +39,22 @@ pipeline {
 stage('Deploy to VPS') {
     steps {
         withCredentials([
-            sshUserPrivateKey(
-                credentialsId: 'vps-ssh-key',
-                keyFileVariable: 'SSH_KEY',
-                usernameVariable: 'VPS_USER'
-            ),
+            sshUserPrivateKey(credentialsId: 'vps-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'VPS_USER'),
             string(credentialsId: 'VPS_HOST', variable: 'VPS_HOST')
         ]) {
             bat """
                 ssh -i "%SSH_KEY%" -o StrictHostKeyChecking=no "%VPS_USER%@%VPS_HOST%" ^
-                    "sudo su - -c ' \\
-                        set -e && \\
-                        cd ~/projects/shop || { echo \"ERROR: Directory ~/projects/shop not found\"; exit 1; } && \\
-                        echo \"Logged in as:\" && whoami && \\
-                        echo \"Current directory:\" && pwd && \\
-                        ls -la && \\
-                        echo \"Pulling new image...\" && \\
-                        docker compose pull ${SERVICE_NAME} || { echo \"Pull failed\"; exit 1; } && \\
-                        echo \"Restarting container...\" && \\
-                        docker compose up -d --force-recreate ${SERVICE_NAME} || { echo \"Up failed\"; exit 1; } && \\
-                        echo \"Deployment finished successfully.\" \\
-                    '"
+                    "set -e && \\
+                     cd ${DOCKER_COMPOSE_LOCATION} || { echo \"ERROR: Directory ${DOCKER_COMPOSE_LOCATION} not found\"; exit 1; } && \\
+                     echo \"Logged in as:\" && whoami && \\
+                     echo \"Current directory:\" && pwd && \\
+                     ls -la && \\
+                     echo \"Pulling new image...\" && \\
+                     docker compose pull ${SERVICE_NAME} || { echo \"Pull failed\"; exit 1; } && \\
+                     echo \"Restarting container...\" && \\
+                     docker compose up -d --force-recreate ${SERVICE_NAME} || { echo \"Up failed\"; exit 1; } && \\
+                     echo \"Deployment finished successfully.\" && \\
+                     docker ps --filter 'name=${SERVICE_NAME}'"
             """
         }
     }

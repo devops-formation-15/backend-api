@@ -38,7 +38,7 @@ spec:
   environment {
     AWS_REGION        = 'eu-north-1'
     ECR_REGISTRY      = '083347785255.dkr.ecr.eu-north-1.amazonaws.com'
-    IMAGE_NAME        = 'nourzakhama2003/express-backend'
+      IMAGE_NAME        = 'backend-api'
     DOCKER_HOST       = 'tcp://localhost:2375'
     DOCKER_API_VERSION = '1.43'
   }

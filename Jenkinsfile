@@ -87,7 +87,7 @@ spec:
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr-creds']]) {
           sh """
             aws eks update-kubeconfig --name demo-test --region ${AWS_REGION}
-            kubectl set image deployment/backend backend=${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} -n prod
+            kubectl set image deployment/backend-deployment backend=${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} -n prod
           """
         }
       }

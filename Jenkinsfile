@@ -1,8 +1,27 @@
 pipeline {
   agent {
-    docker {
-      image 'nourzakhama2003/jenkins-agent:latest'
-      args '-v /var/run/docker.sock:/var/run/docker.sock'
+    kubernetes {
+      yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: jenkins-agent
+    image: nourzakhama2003/jenkins-agent:latest
+    command:
+    - cat
+    tty: true
+    securityContext:
+      privileged: true
+    volumeMounts:
+    - name: docker-sock
+      mountPath: /var/run/docker.sock
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock
+"""
+      defaultContainer 'jenkins-agent'
     }
   }
   environment {

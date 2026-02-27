@@ -5,6 +5,8 @@ pipeline {
 apiVersion: v1
 kind: Pod
 spec:
+  nodeSelector:
+    eks.amazonaws.com/compute-type: ec2
   containers:
   - name: jenkins-agent
     image: nourzakhama2003/jenkins-agent:latest

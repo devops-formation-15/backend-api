@@ -69,7 +69,6 @@ spec:
         }
     }
 }
-```
 
 > ⚠️ **Note:** `privileged: true` is required for Docker-in-Docker but **doesn't work on Fargate**. Since your Jenkins runs on an EC2 node (`jenkins-node`), this will work fine.
 

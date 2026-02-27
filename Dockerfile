@@ -30,7 +30,7 @@ CMD npm start
 # RUN npm install
 
 # # Copy the rest of the server code
-# COPY . .
+# COPY . .  bh
 
 # # Expose port 3000 for the server
 # EXPOSE 3001

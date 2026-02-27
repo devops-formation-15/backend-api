@@ -1,100 +1,43 @@
 pipeline {
-    agent any
-
-    tools {
-        nodejs 'Node20'  // Make sure this matches the name configured in Global Tool Configuration
+  agent any
+  environment {
+    AWS_REGION = 'eu-north-1'
+    ECR_REPO = '083347785255.dkr.ecr.eu-north-1.amazonaws.com/backend-api'
+    CLUSTER_NAME = 'demo-test'
+    KUBECONFIG_CREDENTIAL_ID = 'kubeconfig-demo-test'
+    AWS_CREDENTIALS_ID = 'aws-ecr-creds'
+    IMAGE_TAG = "${env.BUILD_NUMBER}"
+  }
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
     }
-
-    environment {
-        VERSION_NUMBER          = "${BUILD_NUMBER}"
-        SERVICE_NAME            = "backend"
-        IMAGE_NAME              = "nourzakhama2003/express-backend"   // ← your Docker Hub repo
-        DOCKER_COMPOSE_LOCATION = "~/projects/shop/devops-scripts"                   // path on your VPS
-        DOCKERHUB_CREDENTIALS   = "dockerhub-credentials"             // ← we'll create this
-    }
-
-    stages {
-        stage('Install Dependencies & Unit Tests') {
-            steps {
-                sh 'npm ci'
-                sh 'npm run test'
-            }
-        }
-
-        stage('Build & Push Docker Image') {
-            steps {
-                script {
-                    // This handles both login + push cleanly (no plain-text password in logs)
-                    docker.withRegistry('https://index.docker.io/v1/', env.DOCKERHUB_CREDENTIALS) {
-                        def image = docker.build("${IMAGE_NAME}")
-                        
-                        // Push two tags: latest + versioned
-                        image.push('latest')
-                        image.push("v${VERSION_NUMBER}")
-                    }
-                }
-            }
-        }
-stage('Deploy to VPS') {
-    steps {
-        withCredentials([
-            usernamePassword(
-                credentialsId: 'vps-vagrant-password',  // ← your new credential ID
-                usernameVariable: 'VPS_USER',
-                passwordVariable: 'VPS_PASS'
-            ),
-            string(credentialsId: 'VPS_HOST', variable: 'VPS_HOST')
-        ]) {
-            bat """
-                sshpass -p "%VPS_PASS%" ssh -o StrictHostKeyChecking=no "%VPS_USER%@%VPS_HOST%" ^
-                    "cd ${DOCKER_COMPOSE_LOCATION} || { echo 'ERROR: Directory not found'; exit 1; } && \\
-                     echo 'Logged in as:' && whoami && \\
-                     pwd && \\
-                     ls -la && \\
-                     docker compose pull ${SERVICE_NAME} || { echo 'Pull failed'; exit 1; } && \\
-                     docker compose up -d --force-recreate ${SERVICE_NAME} || { echo 'Up failed'; exit 1; } && \\
-                     echo 'Deployment finished successfully.'"
+    stage('Docker Build & Push') {
+      steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS_ID}"]]) {
+          script {
+            sh """
+              aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
+              docker build -t $ECR_REPO:$IMAGE_TAG .
+              docker push $ECR_REPO:$IMAGE_TAG
             """
+          }
         }
+      }
     }
+    stage('Deploy to EKS') {
+      steps {
+        withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIAL_ID}", variable: 'KUBECONFIG')]) {
+          script {
+            sh """
+              export KUBECONFIG=$KUBECONFIG
+              kubectl set image deployment/backend-api backend-api=$ECR_REPO:$IMAGE_TAG -n default
+            """
+          }
+        }
+      }
+    }
+  }
 }
-    }
-
-    post {
-        always {
-            echo 'Pipeline finished'
-        }
-        success {
-            echo '✅ Success!'
-        }
-        failure {
-            echo '❌ Failed – check logs'
-        }
-    }
-}
-
-
-
-
-//        stage('Deploy to VPS') {
-//     steps {
-//         withCredentials([
-//             sshUserPrivateKey(
-//                 credentialsId: 'vps-ssh-key',   // ← your new credential ID
-//                 keyFileVariable: 'SSH_KEY',
-//                 usernameVariable: 'VPS_USER'
-//             ),
-//             string(credentialsId: 'VPS_HOST', variable: 'VPS_HOST')
-//         ]) {
-//             bat """
-//                 ssh -i "%SSH_KEY%" -o StrictHostKeyChecking=no "%VPS_USER%@%VPS_HOST%" ^
-//                     "cd ~/projects/shop && ^
-//                      echo 'Pulling new image...' && ^
-//                      docker compose pull ${SERVICE_NAME} && ^
-//                      echo 'Restarting container...' && ^
-//                      docker compose up -d --force-recreate ${SERVICE_NAME} && ^
-//                      echo 'Deploy done.'"
-//             """
-//         }
-//     }
-// }

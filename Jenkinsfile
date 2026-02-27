@@ -1,5 +1,10 @@
 pipeline {
-  agent any
+   agent {
+    docker {
+      image 'nourzakhama2003/jenkins-agent:latest'
+      args '-v /var/run/docker.sock:/var/run/docker.sock'
+    }
+  }
   environment {
     AWS_REGION = 'eu-north-1'
     ECR_REPO = '083347785255.dkr.ecr.eu-north-1.amazonaws.com/backend-api'

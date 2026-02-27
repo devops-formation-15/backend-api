@@ -6,7 +6,7 @@ apiVersion: v1
 kind: Pod
 spec:
   nodeSelector:
-    eks.amazonaws.com/compute-type: ec2
+    alpha.eksctl.io/nodegroup-name: jenkins-node
   containers:
   - name: jenkins-agent
     image: nourzakhama2003/jenkins-agent:latest

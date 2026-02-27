@@ -10,8 +10,7 @@ spec:
   containers:
   - name: jenkins-agent
     image: nourzakhama2003/jenkins-agent:latest
-    command:
-    - cat
+    command: [cat]
     tty: true
     env:
     - name: DOCKER_HOST
@@ -23,31 +22,41 @@ spec:
     env:
     - name: DOCKER_TLS_CERTDIR
       value: ""
-    - name: DOCKER_HOST
-      value: tcp://0.0.0.0:2375
-  volumes: []
+    volumeMounts:
+    - name: dind-storage
+      mountPath: /var/lib/docker
+  volumes:
+  - name: dind-storage
+    emptyDir: {}
 """
       defaultContainer 'jenkins-agent'
     }
   }
   environment {
-    AWS_REGION = 'eu-north-1'
-    ECR_REGISTRY = '083347785255.dkr.ecr.eu-north-1.amazonaws.com'
-    IMAGE_NAME = 'nourzakhama2003/express-backend'
-    DOCKER_HOST = 'tcp://localhost:2375'
+    AWS_REGION    = 'eu-north-1'
+    ECR_REGISTRY  = '083347785255.dkr.ecr.eu-north-1.amazonaws.com'
+    IMAGE_NAME    = 'nourzakhama2003/express-backend'
+    DOCKER_HOST   = 'tcp://localhost:2375'
   }
   stages {
     stage('Checkout') {
+      steps { checkout scm }
+    }
+    stage('Wait for Docker') {
       steps {
-        checkout scm
+        sh """
+          echo "Waiting for Docker daemon..."
+          for i in \$(seq 1 30); do
+            docker info > /dev/null 2>&1 && echo "Docker ready!" && break
+            echo "Attempt \$i - retrying in 3s..."
+            sleep 3
+          done
+        """
       }
     }
     stage('Build Docker Image') {
       steps {
-        sh """
-          sleep 5  # wait for dind to start
-          docker build -t ${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} .
-        """
+        sh "docker build -t ${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} ."
       }
     }
     stage('Push to ECR') {

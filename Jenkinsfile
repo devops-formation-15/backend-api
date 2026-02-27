@@ -9,7 +9,7 @@ spec:
     alpha.eksctl.io/nodegroup-name: jenkins-node
   containers:
   - name: jenkins-agent
-    image: docker:24.0.9
+    image: nourzakhama2003/jenkins-agent:latest
     command: [cat]
     tty: true
     env:

@@ -13,15 +13,19 @@ spec:
     command:
     - cat
     tty: true
+    env:
+    - name: DOCKER_HOST
+      value: tcp://localhost:2375
+  - name: dind
+    image: docker:24.0.9-dind
     securityContext:
       privileged: true
-    volumeMounts:
-    - name: docker-sock
-      mountPath: /var/run/docker.sock
-  volumes:
-  - name: docker-sock
-    hostPath:
-      path: /var/run/docker.sock
+    env:
+    - name: DOCKER_TLS_CERTDIR
+      value: ""
+    - name: DOCKER_HOST
+      value: tcp://0.0.0.0:2375
+  volumes: []
 """
       defaultContainer 'jenkins-agent'
     }
@@ -30,6 +34,7 @@ spec:
     AWS_REGION = 'eu-north-1'
     ECR_REGISTRY = '083347785255.dkr.ecr.eu-north-1.amazonaws.com'
     IMAGE_NAME = 'nourzakhama2003/express-backend'
+    DOCKER_HOST = 'tcp://localhost:2375'
   }
   stages {
     stage('Checkout') {
@@ -39,7 +44,10 @@ spec:
     }
     stage('Build Docker Image') {
       steps {
-        sh "docker build -t ${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} ."
+        sh """
+          sleep 5  # wait for dind to start
+          docker build -t ${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} .
+        """
       }
     }
     stage('Push to ECR') {

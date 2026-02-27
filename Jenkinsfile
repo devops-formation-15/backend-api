@@ -15,6 +15,8 @@ spec:
     env:
     - name: DOCKER_HOST
       value: tcp://localhost:2375
+    - name: DOCKER_API_VERSION
+      value: "1.43"
   - name: dind
     image: docker:24.0.9-dind
     securityContext:
@@ -32,16 +34,23 @@ spec:
       defaultContainer 'jenkins-agent'
     }
   }
+
   environment {
-    AWS_REGION    = 'eu-north-1'
-    ECR_REGISTRY  = '083347785255.dkr.ecr.eu-north-1.amazonaws.com'
-    IMAGE_NAME    = 'nourzakhama2003/express-backend'
-    DOCKER_HOST   = 'tcp://localhost:2375'
+    AWS_REGION        = 'eu-north-1'
+    ECR_REGISTRY      = '083347785255.dkr.ecr.eu-north-1.amazonaws.com'
+    IMAGE_NAME        = 'nourzakhama2003/express-backend'
+    DOCKER_HOST       = 'tcp://localhost:2375'
+    DOCKER_API_VERSION = '1.43'
   }
+
   stages {
+
     stage('Checkout') {
-      steps { checkout scm }
+      steps {
+        checkout scm
+      }
     }
+
     stage('Wait for Docker') {
       steps {
         sh """
@@ -54,11 +63,13 @@ spec:
         """
       }
     }
+
     stage('Build Docker Image') {
       steps {
         sh "docker build -t ${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} ."
       }
     }
+
     stage('Push to ECR') {
       steps {
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr-creds']]) {
@@ -70,6 +81,7 @@ spec:
         }
       }
     }
+
     stage('Deploy to EKS') {
       steps {
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr-creds']]) {
@@ -79,6 +91,16 @@ spec:
           """
         }
       }
+    }
+
+  }
+
+  post {
+    success {
+      echo "✅ Pipeline succeeded! Image: ${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}"
+    }
+    failure {
+      echo "❌ Pipeline failed! Check logs above."
     }
   }
 }

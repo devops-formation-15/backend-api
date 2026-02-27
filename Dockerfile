@@ -32,7 +32,7 @@ CMD npm start
 # # Copy the rest of the server code
 # COPY . .  bh
 
-# # Expose port 3000 for the server
+# # Expose port 3000 for the server b
 # EXPOSE 3001
 
 # # Default command to start the application
